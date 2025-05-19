@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import perplexityService from '@/utils/perplexityService';
+import productApiService from '@/utils/productApiService';
 import { Search } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -19,31 +19,15 @@ const ComparisonTool = () => {
   const [product2, setProduct2] = useState(searchParams.get('product2') || '');
   const [isLoading, setIsLoading] = useState(false);
   const [comparisonData, setComparisonData] = useState<any>(null);
-  const [apiKeySet, setApiKeySet] = useState(false);
-  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('perplexity_api_key');
-    if (storedApiKey) {
-      setApiKeySet(true);
-    }
-    
     // If both products are in URL params, auto-compare
     if (searchParams.get('product1') && searchParams.get('product2')) {
       handleCompare();
     }
   }, []);
 
-  const handleSetApiKey = () => {
-    if (apiKey.trim()) {
-      perplexityService.setApiKey(apiKey.trim());
-      setApiKeySet(true);
-      toast({
-        title: "API Key Saved",
-        description: "Your Perplexity API key has been saved."
-      });
-    }
-  };
+
 
   const handleCompare = async () => {
     if (!product1 || !product2) {
@@ -58,19 +42,15 @@ const ComparisonTool = () => {
     setIsLoading(true);
     
     try {
-      // In production, this would use the actual API
-      // For now, we'll use mock data
-      const result = perplexityService.getMockComparisonData(product1, product2);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use our backend API service
+      const result = await productApiService.compareProducts(product1, product2);
       
       setComparisonData(result);
     } catch (error) {
       console.error(error);
       toast({
         title: "Comparison Failed",
-        description: "Failed to compare products. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to compare products. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -79,31 +59,32 @@ const ComparisonTool = () => {
   };
 
   const MetricBar = ({ name, score1, score2 }: { name: string, score1: number, score2: number }) => {
-    const max = Math.max(score1, score2);
-    const product1Percent = (score1 / 10) * 100;
-    const product2Percent = (score2 / 10) * 100;
-    
+    const max = Math.max(score1, score2, 1); // Avoid division by zero
+    const product1Percent = (score1 / max) * 100;
+    const product2Percent = (score2 / max) * 100;
     return (
       <div className="space-y-1">
         <div className="flex justify-between text-sm">
           <span>{name}</span>
-          <div className="flex gap-4">
-            <span className="text-brand-600">{score1}/10</span>
-            <span className="text-brand-800">{score2}/10</span>
-          </div>
         </div>
-        <div className="flex gap-2 items-center">
-          <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-brand-600 rounded-full" 
-              style={{ width: `${product1Percent}%` }}
-            />
+        <div className="flex gap-2 items-end">
+          <div className="flex flex-col items-center flex-1">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden mb-1">
+              <div 
+                className="h-full bg-brand-600 rounded-full" 
+                style={{ width: `${product1Percent}%` }}
+              />
+            </div>
+            <span className="text-brand-600 text-xs mt-1">{score1}</span>
           </div>
-          <div className="h-2 flex-1 bg-muted rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-brand-800 rounded-full" 
-              style={{ width: `${product2Percent}%` }}
-            />
+          <div className="flex flex-col items-center flex-1">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden mb-1">
+              <div 
+                className="h-full bg-brand-800 rounded-full" 
+                style={{ width: `${product2Percent}%` }}
+              />
+            </div>
+            <span className="text-brand-800 text-xs mt-1">{score2}</span>
           </div>
         </div>
       </div>
@@ -112,37 +93,6 @@ const ComparisonTool = () => {
 
   return (
     <div className="space-y-6">
-      {!apiKeySet && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Set Your Perplexity API Key</CardTitle>
-            <CardDescription>
-              A Perplexity API key is required to use the comparison tool. You can get one from the Perplexity website.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder="Enter your Perplexity API key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleSetApiKey}>Save Key</Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              For demo purposes, you can continue without an API key. Mock data will be used instead.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" onClick={() => setApiKeySet(true)}>
-              Continue with Mock Data
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
-      
       <Card>
         <CardHeader>
           <CardTitle>Compare Products</CardTitle>
@@ -202,7 +152,7 @@ const ComparisonTool = () => {
         </CardFooter>
       </Card>
       
-      {comparisonData && (
+      {comparisonData && comparisonData.product1 && comparisonData.product2 ? (
         <div className="space-y-6 animate-fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Comparison Results</h2>
@@ -210,21 +160,13 @@ const ComparisonTool = () => {
               Reset
             </Button>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product 1 Card */}
             <Card>
               <CardHeader className="pb-2">
-                <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
-                  <img 
-                    src={comparisonData.product1.imageUrl}
-                    alt={comparisonData.product1.name}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-                <CardTitle className="mt-4">{comparisonData.product1.name}</CardTitle>
+                <CardTitle className="mt-4">{comparisonData?.product1?.name || "N/A"}</CardTitle>
                 <CardDescription className="text-lg font-medium text-brand-600">
-                  {comparisonData.product1.price}
+                  {comparisonData?.product1?.price || "N/A"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -236,56 +178,48 @@ const ComparisonTool = () => {
                   </TabsList>
                   <TabsContent value="features" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product1.keyFeatures.map((feature: string, index: number) => (
+                      {comparisonData?.product1?.keyFeatures?.length ? comparisonData.product1.keyFeatures.map((feature: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-brand-600" />
                           {feature}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No features available</li>}
                     </ul>
                   </TabsContent>
                   <TabsContent value="pros" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product1.pros.map((pro: string, index: number) => (
+                      {comparisonData?.product1?.pros?.length ? comparisonData.product1.pros.map((pro: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                           {pro}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No pros available</li>}
                     </ul>
                   </TabsContent>
                   <TabsContent value="cons" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product1.cons.map((con: string, index: number) => (
+                      {comparisonData?.product1?.cons?.length ? comparisonData.product1.cons.map((con: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                           {con}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No cons available</li>}
                     </ul>
                   </TabsContent>
                 </Tabs>
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Ideal for:</span> {comparisonData.product1.idealFor}
+                  <span className="font-medium">Ideal for:</span> {comparisonData?.product1?.idealFor || "N/A"}
                 </p>
               </CardFooter>
             </Card>
-            
             {/* Product 2 Card */}
             <Card>
               <CardHeader className="pb-2">
-                <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
-                  <img 
-                    src={comparisonData.product2.imageUrl}
-                    alt={comparisonData.product2.name}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-                <CardTitle className="mt-4">{comparisonData.product2.name}</CardTitle>
+                <CardTitle className="mt-4">{comparisonData?.product2?.name || "N/A"}</CardTitle>
                 <CardDescription className="text-lg font-medium text-brand-800">
-                  {comparisonData.product2.price}
+                  {comparisonData?.product2?.price || "N/A"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -297,44 +231,43 @@ const ComparisonTool = () => {
                   </TabsList>
                   <TabsContent value="features" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product2.keyFeatures.map((feature: string, index: number) => (
+                      {comparisonData?.product2?.keyFeatures?.length ? comparisonData.product2.keyFeatures.map((feature: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-brand-800" />
                           {feature}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No features available</li>}
                     </ul>
                   </TabsContent>
                   <TabsContent value="pros" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product2.pros.map((pro: string, index: number) => (
+                      {comparisonData?.product2?.pros?.length ? comparisonData.product2.pros.map((pro: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                           {pro}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No pros available</li>}
                     </ul>
                   </TabsContent>
                   <TabsContent value="cons" className="space-y-2 mt-4">
                     <ul className="space-y-2">
-                      {comparisonData.product2.cons.map((con: string, index: number) => (
+                      {comparisonData?.product2?.cons?.length ? comparisonData.product2.cons.map((con: string, index: number) => (
                         <li key={index} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
                           {con}
                         </li>
-                      ))}
+                      )) : <li className="text-muted-foreground">No cons available</li>}
                     </ul>
                   </TabsContent>
                 </Tabs>
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">Ideal for:</span> {comparisonData.product2.idealFor}
+                  <span className="font-medium">Ideal for:</span> {comparisonData?.product2?.idealFor || "N/A"}
                 </p>
               </CardFooter>
             </Card>
           </div>
-          
           {/* Metrics Comparison */}
           <Card>
             <CardHeader>
@@ -347,29 +280,29 @@ const ComparisonTool = () => {
                   variant="outline" 
                   className="border-brand-600 text-brand-600 font-medium"
                 >
-                  {comparisonData.product1.name}
+                  {comparisonData?.product1?.name || "Product 1"}
                 </Badge>
                 <Badge 
                   variant="outline" 
                   className="border-brand-800 text-brand-800 font-medium"
                 >
-                  {comparisonData.product2.name}
+                  {comparisonData?.product2?.name || "Product 2"}
                 </Badge>
               </div>
               <div className="space-y-3">
-                {comparisonData.comparisonMetrics.map((metric: any, index: number) => (
+                {comparisonData?.comparisonMetrics?.length ? comparisonData.comparisonMetrics.map((metric: any, index: number) => (
                   <MetricBar 
                     key={index}
                     name={metric.name}
                     score1={metric.product1Score}
                     score2={metric.product2Score}
                   />
-                ))}
+                )) : <div className="text-muted-foreground">No metrics available</div>}
               </div>
             </CardContent>
           </Card>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

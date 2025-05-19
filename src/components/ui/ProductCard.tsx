@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
-import { Product } from '@/utils/perplexityService';
+import { Product } from '@/utils/productApiService';
 
 interface ProductCardProps {
   product: Product;

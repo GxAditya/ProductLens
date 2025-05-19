@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
-import perplexityService, { Product } from '@/utils/perplexityService';
+import productApiService, { Product } from '@/utils/productApiService';
 import { toast } from 'sonner';
 
 const ProductFinder = () => {
@@ -23,27 +23,13 @@ const ProductFinder = () => {
   const [results, setResults] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
-  const [apiKeySet, setApiKeySet] = useState(false);
-  const [apiKey, setApiKey] = useState('');
 
   // Mock categories and brands
   const categories = ['Electronics', 'Audio', 'Wearables', 'Computers', 'Photography'];
   const brands = ['TechBrand', 'CompuTech', 'SoundMax', 'FitTech', 'PhotoPro'];
 
-  useEffect(() => {
-    const storedApiKey = localStorage.getItem('perplexity_api_key');
-    if (storedApiKey) {
-      setApiKeySet(true);
-    }
-  }, []);
 
-  const handleSetApiKey = () => {
-    if (apiKey.trim()) {
-      perplexityService.setApiKey(apiKey.trim());
-      setApiKeySet(true);
-      toast.success("API Key Saved");
-    }
-  };
+
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => 
@@ -70,60 +56,82 @@ const ProductFinder = () => {
     setIsLoading(true);
     
     try {
-      // In production, this would use the actual API
-      // For now, we'll use mock data
-      const results = perplexityService.getMockProductFinderResults(searchQuery);
+      // Build search criteria string including filters
+      let criteriaString = searchQuery;
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Add price range to criteria
+      if (priceRange[0] > 0 || priceRange[1] < 2000) {
+        criteriaString += ` with price range $${priceRange[0]}-$${priceRange[1]}`;
+      }
       
-      // Apply filters
+      // Add categories to criteria
+      if (selectedCategories.length > 0) {
+        criteriaString += ` in categories: ${selectedCategories.join(', ')}`;
+      }
+      
+      // Add brands to criteria
+      if (selectedBrands.length > 0) {
+        criteriaString += ` from brands: ${selectedBrands.join(', ')}`;
+      }
+      
+      // Use our backend API service
+      const results = await productApiService.findProducts(criteriaString);
+      
+      // Apply additional client-side filtering if needed
       let filteredResults = results;
       
-      if (selectedCategories.length > 0) {
-        filteredResults = filteredResults.filter(product => 
-          selectedCategories.includes(product.category)
-        );
-      }
-      
-      if (selectedBrands.length > 0) {
-        filteredResults = filteredResults.filter(product => 
-          selectedBrands.includes(product.brand)
-        );
-      }
-      
-      // Apply price filter - assuming price is a string like "$100-$200"
+      // Apply price filter for any results that might not match the API filtering
       filteredResults = filteredResults.filter(product => {
         const priceMatch = product.price.match(/\$(\d+)(?:-\$(\d+))?/);
         if (priceMatch) {
           const minPrice = parseInt(priceMatch[1], 10);
           const maxPrice = priceMatch[2] ? parseInt(priceMatch[2], 10) : minPrice;
+          
           return maxPrice >= priceRange[0] && minPrice <= priceRange[1];
         }
         return true;
       });
       
-      // Apply sorting
+      // Sort results based on selected sort option
       if (sort === 'price-low') {
         filteredResults.sort((a, b) => {
-          const aPrice = parseInt(a.price.replace(/[^\d]/g, ''), 10);
-          const bPrice = parseInt(b.price.replace(/[^\d]/g, ''), 10);
+          const aPrice = parseInt(a.price.match(/\$(\d+)/)?.[1] || '0', 10);
+          const bPrice = parseInt(b.price.match(/\$(\d+)/)?.[1] || '0', 10);
           return aPrice - bPrice;
         });
       } else if (sort === 'price-high') {
         filteredResults.sort((a, b) => {
-          const aPrice = parseInt(a.price.replace(/[^\d]/g, ''), 10);
-          const bPrice = parseInt(b.price.replace(/[^\d]/g, ''), 10);
+          const aPrice = parseInt(a.price.match(/\$(\d+)/)?.[1] || '0', 10);
+          const bPrice = parseInt(b.price.match(/\$(\d+)/)?.[1] || '0', 10);
           return bPrice - aPrice;
         });
       } else if (sort === 'rating') {
         filteredResults.sort((a, b) => b.rating - a.rating);
+      } else if (sort === 'relevance') {
+        // No client-side sorting for relevance, rely on API
       }
+      
+      // Add placeholder images if not provided by API
+      filteredResults = filteredResults.map(product => {
+        if (!product.imageUrl || product.imageUrl === '/placeholder.svg') { // Also check for default placeholder
+          return {
+            ...product,
+            imageUrl: `https://placehold.co/300x300/e6f2ff/0284c7?text=${encodeURIComponent(product.name)}`
+          };
+        }
+        return product;
+      });
       
       setResults(filteredResults);
     } catch (error) {
       console.error(error);
-      toast.error("Failed to search products. Please try again.");
+      toast.error("Failed to find products. Please try again.");
+      
+      // Fall back to mock data in development
+      // if (process.env.NODE_ENV === 'development') {
+      //   const mockResults = perplexityService.getMockProductFinderResults(searchQuery);
+      //   setResults(mockResults);
+      // }
     } finally {
       setIsLoading(false);
     }
@@ -131,36 +139,6 @@ const ProductFinder = () => {
 
   return (
     <div className="space-y-6">
-      {!apiKeySet && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Set Your Perplexity API Key</CardTitle>
-            <CardDescription>
-              A Perplexity API key is required to use the product finder. You can get one from the Perplexity website.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                placeholder="Enter your Perplexity API key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleSetApiKey}>Save Key</Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              For demo purposes, you can continue without an API key. Mock data will be used instead.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" onClick={() => setApiKeySet(true)}>
-              Continue with Mock Data
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
       
       <Card>
         <CardHeader>

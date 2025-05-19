@@ -1,17 +1,52 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, ArrowRight, Settings } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
-import perplexityService from '@/utils/perplexityService';
+import productApiService, { Product } from '@/utils/productApiService';
 
 const Dashboard = () => {
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [apiKeySet, setApiKeySet] = useState(!!localStorage.getItem('perplexity_api_key'));
-  
+  const [recentProducts, setRecentProducts] = useState<Product[]>([]);
+  const [recentUpdates, setRecentUpdates] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingUpdates, setLoadingUpdates] = useState(true);
+  const [errorProducts, setErrorProducts] = useState<string | null>(null);
+  const [errorUpdates, setErrorUpdates] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRecentProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        const products = await productApiService.findProducts('recent products'); // Using a generic criteria
+        setRecentProducts(products.slice(0, 3)); // Limit to 3 as before
+      } catch (error) {
+        console.error('Error fetching recent products:', error);
+        setErrorProducts('Failed to load recent products.');
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    const fetchRecentUpdates = async () => {
+      try {
+        setLoadingUpdates(true);
+        const updates = await productApiService.getProductUpdates('Technology'); // Using a default category
+        setRecentUpdates(updates.slice(0, 2)); // Limit to 2 as before
+      } catch (error) {
+        console.error('Error fetching recent updates:', error);
+        setErrorUpdates('Failed to load recent updates.');
+      } finally {
+        setLoadingUpdates(false);
+      }
+    };
+
+    fetchRecentProducts();
+    fetchRecentUpdates();
+  }, []);
+
   // Mock data
   const savedComparisons = [
     {
@@ -27,16 +62,12 @@ const Dashboard = () => {
       date: '2025-05-10',
     },
   ];
-  
-  const recentProducts = perplexityService.getMockProductFinderResults('').slice(0, 3);
-  const recentUpdates = perplexityService.getMockProductUpdates('').slice(0, 2);
 
-  const handleSetApiKey = () => {
-    if (apiKeyInput.trim()) {
-      perplexityService.setApiKey(apiKeyInput.trim());
-      setApiKeySet(true);
-    }
-  };
+  // Mock data for recent products and updates
+  // const recentProducts = productApiService.getMockProductFinderResults('').slice(0, 3);
+  // const recentUpdates = productApiService.getMockProductFinderResults('').slice(0, 2);
+
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -52,26 +83,6 @@ const Dashboard = () => {
             Welcome back! Here's an overview of your product research.
           </p>
         </div>
-        
-        {!apiKeySet && (
-          <Card className="mt-4 md:mt-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Set Perplexity API Key</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="API Key"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  className="flex-1 py-1 px-2 text-sm border rounded"
-                />
-                <Button size="sm" onClick={handleSetApiKey}>Save</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -120,51 +131,25 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Recent Updates</CardTitle>
-            <CardDescription>
-              Latest product releases and updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentUpdates.map((update) => (
-              <div key={update.id} className="border-b pb-4 last:border-0 last:pb-0">
-                <div className="flex justify-between items-start mb-1">
-                  <p className="font-medium">{update.productName}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDate(update.date)}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                  {update.description}
-                </p>
-                <Link to="/updates" className="text-xs text-brand-600 hover:underline flex items-center">
-                  Read more <ArrowRight className="ml-1 h-3 w-3" />
-                </Link>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to="/updates">View All Updates</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2">
-          <CardHeader>
             <CardTitle>Recommended Products</CardTitle>
             <CardDescription>
               Products matching your preferences and search history
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {recentProducts.map((product) => (
-                <ProductCard key={product.id} product={product} className="h-full" />
-              ))}
-            </div>
+            {loadingProducts ? (
+              <p className="text-sm text-muted-foreground">Loading products...</p>
+            ) : errorProducts ? (
+              <p className="text-sm text-red-500">{errorProducts}</p>
+            ) : recentProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {recentProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} className="h-full" />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No recommended products found.</p>
+            )}
           </CardContent>
           <CardFooter>
             <Button asChild variant="outline" className="w-full">
@@ -223,8 +208,8 @@ const Dashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to="/compare">Compare Products</Link>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/compare">View All Comparisons</Link>
             </Button>
           </CardFooter>
         </Card>

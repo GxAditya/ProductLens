@@ -26,9 +26,7 @@ const Navbar = () => {
           <Link to="/finder" className="px-4 py-2 text-sm font-medium hover:text-brand-600 transition-colors">
             Find Products
           </Link>
-          <Link to="/updates" className="px-4 py-2 text-sm font-medium hover:text-brand-600 transition-colors">
-            Updates
-          </Link>
+          {/* Removed Updates link from navigation */}
           <Button variant="ghost" size="icon" className="ml-2">
             <Search className="h-[1.2rem] w-[1.2rem]" />
             <span className="sr-only">Search</span>

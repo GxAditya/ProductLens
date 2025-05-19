@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import perplexityService from '@/utils/perplexityService';
+import productApiService from '@/utils/productApiService';
 import { toast } from 'sonner';
 import { Calendar, Filter, Bell } from 'lucide-react';
 
@@ -17,15 +17,8 @@ const ProductUpdates = () => {
   const [updates, setUpdates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [subscribed, setSubscribed] = useState<string[]>([]);
-  const [apiKeySet, setApiKeySet] = useState(false);
-  const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('perplexity_api_key');
-    if (storedApiKey) {
-      setApiKeySet(true);
-    }
-    
     // Load initial updates
     loadUpdates(selectedCategory);
     
@@ -36,24 +29,14 @@ const ProductUpdates = () => {
     }
   }, []);
 
-  const handleSetApiKey = () => {
-    if (apiKey.trim()) {
-      perplexityService.setApiKey(apiKey.trim());
-      setApiKeySet(true);
-      toast.success("API Key Saved");
-    }
-  };
+
 
   const loadUpdates = async (category: string) => {
     setIsLoading(true);
     
     try {
-      // In production, this would use the actual API
-      // For now, we'll use mock data
-      const updates = perplexityService.getMockProductUpdates(category);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use our backend API service
+      const updates = await productApiService.getProductUpdates(category);
       
       setUpdates(updates);
     } catch (error) {
@@ -91,15 +74,16 @@ const ProductUpdates = () => {
 
   return (
     <div className="space-y-6">
-      {!apiKeySet && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Set Your Perplexity API Key</CardTitle>
-            <CardDescription>
-              A Perplexity API key is required to use the product updates feature. You can get one from the Perplexity website.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {/* Remove API Key Input Card */}
+      {/*
+      <Card>
+        <CardHeader>
+          <CardTitle>API Key Required</CardTitle>
+          <CardDescription>
+            A Perplexity API key is required to use the product updates feature. You can get one from the Perplexity website.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
             <div className="flex gap-2">
               <Input
                 type="password"
@@ -120,7 +104,7 @@ const ProductUpdates = () => {
             </Button>
           </CardFooter>
         </Card>
-      )}
+      */}
       
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-3/4">
@@ -222,41 +206,23 @@ const ProductUpdates = () => {
         <div className="w-full md:w-1/4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                My Subscriptions
-              </CardTitle>
-              <CardDescription>
-                Get notified about updates in these categories
-              </CardDescription>
+              <CardTitle>Subscriptions</CardTitle>
+              <CardDescription>Manage your category subscriptions</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {categories.map((category) => {
-                  const isSubscribed = subscribed.includes(category);
-                  
-                  return (
-                    <Button
-                      key={category}
-                      variant={isSubscribed ? "default" : "outline"}
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => toggleSubscription(category)}
-                    >
-                      {category}
-                      <span className="ml-auto">
-                        {isSubscribed ? "✓" : "+"}
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
+            <CardContent className="space-y-3">
+              {categories.map((category) => (
+                <div key={category} className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{category}</span>
+                  <Button
+                    variant={subscribed.includes(category) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleSubscription(category)}
+                  >
+                    {subscribed.includes(category) ? "Subscribed" : "Subscribe"}
+                  </Button>
+                </div>
+              ))}
             </CardContent>
-            <CardFooter>
-              <p className="text-xs text-muted-foreground">
-                You'll receive notifications for your subscribed categories when signed in
-              </p>
-            </CardFooter>
           </Card>
         </div>
       </div>

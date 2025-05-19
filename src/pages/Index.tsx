@@ -58,7 +58,7 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Features section */}
+        {/* Features section without Product Updates */}
         <section className="py-16 px-4 md:px-6 bg-white dark:bg-gray-900">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-12">
@@ -67,8 +67,7 @@ const Index = () => {
                 Our AI-powered tools help you research, compare, and find the best products for your needs.
               </p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="flex flex-wrap justify-center gap-8">
               <div className="p-6 border rounded-lg bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                 <div className="h-12 w-12 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4">
                   <BarChart3 className="h-6 w-6" />
@@ -81,7 +80,6 @@ const Index = () => {
                   Compare Now <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
-              
               <div className="p-6 border rounded-lg bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                 <div className="h-12 w-12 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4">
                   <Search className="h-6 w-6" />
@@ -94,19 +92,7 @@ const Index = () => {
                   Find Products <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </div>
-              
-              <div className="p-6 border rounded-lg bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
-                <div className="h-12 w-12 rounded-full bg-brand-100 dark:bg-brand-900 text-brand-600 dark:text-brand-400 flex items-center justify-center mb-4">
-                  <Bell className="h-6 w-6" />
-                </div>
-                <h3 className="heading-3 mb-2">Product Updates</h3>
-                <p className="text-muted-foreground mb-4">
-                  Stay informed about new product releases, updates, and changes in your preferred categories.
-                </p>
-                <Link to="/updates" className="text-brand-600 hover:text-brand-700 font-medium flex items-center">
-                  View Updates <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </div>
+              {/* Removed Product Updates feature card */}
             </div>
           </div>
         </section>
