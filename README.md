@@ -1,73 +1,105 @@
-# Welcome to your Lovable project
+# Item Discovery Hub
 
-## Project info
+A modern product discovery and comparison web app powered by React, FastAPI, and the Perplexity Sonar API.
 
-**URL**: https://lovable.dev/projects/70815ffa-9832-4438-a937-78d88be8c9f9
+## Tech Stack
 
-## How can I edit this code?
+**Frontend:**
+- [Vite](https://vitejs.dev/) (React + TypeScript)
+- [React 18](https://react.dev/)
+- [shadcn/ui](https://ui.shadcn.com/) (Radix UI)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [React Router](https://reactrouter.com/)
+- [sonner](https://sonner.emilkowal.ski/) (toasts)
 
-There are several ways of editing your application.
+**Backend:**
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Uvicorn](https://www.uvicorn.org/) (ASGI server)
+- [httpx](https://www.python-httpx.org/) (async HTTP client)
+- [python-dotenv](https://pypi.org/project/python-dotenv/)
+- [Pydantic](https://docs.pydantic.dev/)
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/70815ffa-9832-4438-a937-78d88be8c9f9) and start prompting.
+## Features
+- Product search and filtering
+- Product comparison
+- Product details modal (with caching to avoid repeated API calls)
+- Latest product updates/news
+- Responsive, modern UI
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
+### 1. Clone the repository
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+cd item-discovery-hub
 ```
 
-**Edit a file directly in GitHub**
+### 2. Install Frontend Dependencies
+```sh
+npm install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 3. Install Backend Dependencies
+```sh
+cd backend
+pip install -r requirements.txt
+```
 
-**Use GitHub Codespaces**
+### 4. Set Up Environment Variables (Backend)
+Create a `.env` file in the `backend/` directory:
+```
+PERPLEXITY_API_KEY=your_perplexity_api_key_here
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 5. Run the Backend
+From the `backend/` directory:
+```sh
+uvicorn main:app --reload --log-level debug
+```
+The backend will be available at [http://localhost:8000](http://localhost:8000)
 
-## What technologies are used for this project?
+### 6. Run the Frontend
+From the project root:
+```sh
+npm run dev
+```
+The frontend will be available at [http://localhost:5173](http://localhost:5173) (or as shown in your terminal)
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Usage Notes
+- The frontend and backend must both be running for full functionality.
+- Product details are cached in memory on the frontend to avoid repeated API calls for the same product.
+- The details modal is scrollable and fits the viewport for large content.
+- You can customize the Perplexity API prompt/logic in `backend/main.py`.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/70815ffa-9832-4438-a937-78d88be8c9f9) and click on Share -> Publish.
+## Project Structure
 
-## Can I connect a custom domain to my Lovable project?
+```
+item-discovery-hub/
+├── backend/           # FastAPI backend
+│   ├── main.py
+│   ├── requirements.txt
+│   └── ...
+├── src/               # Frontend source code
+│   ├── components/
+│   ├── utils/
+│   └── ...
+├── package.json
+├── tailwind.config.ts
+├── vite.config.ts
+└── ...
+```
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contributing
+Pull requests and issues are welcome! Please open an issue to discuss your idea or bug before submitting a PR.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---

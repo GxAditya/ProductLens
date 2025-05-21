@@ -60,6 +60,9 @@ class ProductUpdate(BaseModel):
     source: str
     url: str
 
+class ProductDetailsRequest(BaseModel):
+    product: str
+
 # Perplexity API client
 class PerplexityClient:
     def __init__(self):
@@ -240,6 +243,33 @@ class PerplexityClient:
             # If all extraction attempts fail, return an empty list
             raise HTTPException(status_code=422, detail="Failed to parse product updates from API response")
 
+    async def get_product_details(self, product: str) -> dict:
+        prompt = (
+            f"Provide a detailed overview of the product: '{product}'. "
+            "Include: name, brand, category, price range, release date, rating (1-5), key features, pros, cons, specifications, and a brief description. "
+            "Format the response as a JSON object with the following properties: "
+            "id, name, description, price, features (array), category, brand, rating, releaseDate, imageUrl, pros (array), cons (array), specifications (object)."
+        )
+        system_prompt = "You are a product details expert. Return detailed, structured product information in JSON format."
+        response = await self.query_perplexity(prompt, system_prompt)
+        content = response["choices"][0]["message"]["content"]
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            json_match = None
+            if "```json" in content:
+                json_match = content.split("```json")[1].split("```", 1)[0].strip()
+            elif "```" in content:
+                json_match = content.split("```", 1)[1].split("```", 1)[0].strip()
+            elif "{" in content and "}" in content:
+                json_match = content[content.find("{"):content.rfind("}")+1]
+            if json_match:
+                try:
+                    return json.loads(json_match)
+                except json.JSONDecodeError:
+                    pass
+            return {"rawContent": content, "error": "Could not parse structured data"}
+
 # Dependency to get the Perplexity client
 @lru_cache()
 def get_perplexity_client():
@@ -273,6 +303,14 @@ async def get_product_updates(
 ):
     updates = await client.get_product_updates(request.category)
     return updates
+
+@app.post("/api/details")
+async def get_product_details(
+    request: ProductDetailsRequest,
+    client: PerplexityClient = Depends(get_perplexity_client)
+):
+    details = await client.get_product_details(request.product)
+    return details
 
 if __name__ == "__main__":
     import uvicorn

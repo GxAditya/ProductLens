@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,9 +9,10 @@ interface ProductCardProps {
   product: Product;
   showActions?: boolean;
   className?: string;
+  onDetailsClick?: (product: Product) => void;
 }
 
-const ProductCard = ({ product, showActions = true, className }: ProductCardProps) => {
+const ProductCard = ({ product, showActions = true, className, onDetailsClick }: ProductCardProps) => {
   return (
     <Card className={`card-hover overflow-hidden ${className || ''}`}>
       <CardHeader className="p-4 pb-0">
@@ -41,10 +41,8 @@ const ProductCard = ({ product, showActions = true, className }: ProductCardProp
               Compare
             </Link>
           </Button>
-          <Button asChild size="sm" className="flex-1">
-            <Link to={`/product/${product.id}`}>
-              Details
-            </Link>
+          <Button size="sm" className="flex-1" onClick={() => onDetailsClick?.(product)}>
+            Details
           </Button>
         </CardFooter>
       )}

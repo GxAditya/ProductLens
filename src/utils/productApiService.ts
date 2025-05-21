@@ -20,6 +20,22 @@ export interface Product {
   imageUrl: string;
 }
 
+export interface ProductDetails {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  features: string[];
+  category: string;
+  brand: string;
+  rating: number;
+  releaseDate: string;
+  imageUrl: string;
+  pros?: string[];
+  cons?: string[];
+  specifications?: Record<string, string>;
+}
+
 class ProductApiService {
   private baseUrl: string;
   
@@ -99,6 +115,28 @@ class ProductApiService {
       console.error('Error getting product updates:', error);
       toast.error(error instanceof Error ? error.message : 'Unknown error occurred');
       
+      throw error;
+    }
+  }
+
+  async getProductDetails(product: string): Promise<ProductDetails> {
+    try {
+      const response = await fetch(`${this.baseUrl}/details`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ product }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.detail || 'Failed to fetch product details');
+        throw new Error(errorData.detail || 'Failed to fetch product details');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching product details:', error);
+      toast.error(error instanceof Error ? error.message : 'Unknown error occurred');
       throw error;
     }
   }

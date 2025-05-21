@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +12,8 @@ import { Search, Filter } from 'lucide-react';
 import ProductCard from '@/components/ui/ProductCard';
 import productApiService, { Product } from '@/utils/productApiService';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ProductDetails } from '@/utils/productApiService';
 
 const ProductFinder = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,13 +24,16 @@ const ProductFinder = () => {
   const [results, setResults] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
+  const [productDetails, setProductDetails] = useState<ProductDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [detailsCache, setDetailsCache] = useState<Record<string, ProductDetails>>({});
 
   // Mock categories and brands
   const categories = ['Electronics', 'Audio', 'Wearables', 'Computers', 'Photography'];
   const brands = ['TechBrand', 'CompuTech', 'SoundMax', 'FitTech', 'PhotoPro'];
-
-
-
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => 
@@ -134,6 +138,29 @@ const ProductFinder = () => {
       // }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDetailsClick = async (product: Product) => {
+    setDetailsProduct(product);
+    setProductDetails(null);
+    setDetailsError(null);
+    setDetailsOpen(true);
+    const cacheKey = product.name;
+    if (detailsCache[cacheKey]) {
+      setProductDetails(detailsCache[cacheKey]);
+      setDetailsLoading(false);
+      return;
+    }
+    setDetailsLoading(true);
+    try {
+      const details = await productApiService.getProductDetails(product.name);
+      setProductDetails(details);
+      setDetailsCache(prev => ({ ...prev, [cacheKey]: details }));
+    } catch (error: any) {
+      setDetailsError(error?.message || 'Failed to fetch product details');
+    } finally {
+      setDetailsLoading(false);
     }
   };
 
@@ -306,7 +333,7 @@ const ProductFinder = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {results.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} onDetailsClick={handleDetailsClick} />
             ))}
           </div>
         </div>
@@ -318,6 +345,74 @@ const ProductFinder = () => {
           <p className="text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       )}
+      
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Product Details</DialogTitle>
+            <DialogDescription>
+              {detailsProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {detailsLoading && <div>Loading...</div>}
+          {detailsError && <div className="text-red-500">{detailsError}</div>}
+          {productDetails && !detailsLoading && !detailsError && (
+            <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="font-bold text-lg">{productDetails.name}</div>
+              <div className="text-sm text-muted-foreground">{productDetails.description}</div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="font-semibold">Price:</span>{" "}
+                {typeof productDetails.price === "string"
+                  ? productDetails.price
+                  : productDetails.price && typeof productDetails.price === "object"
+                    ? `${productDetails.price.min} - ${productDetails.price.max} ${productDetails.price.currency || ""}`
+                    : ""}
+                <span className="font-semibold">Brand:</span> {productDetails.brand}
+                <span className="font-semibold">Category:</span> {productDetails.category}
+                <span className="font-semibold">Rating:</span> {productDetails.rating}
+                <span className="font-semibold">Release Date:</span> {productDetails.releaseDate}
+              </div>
+              {productDetails.features && productDetails.features.length > 0 && (
+                <div>
+                  <span className="font-semibold">Features:</span>
+                  <ul className="list-disc ml-5">
+                    {productDetails.features.map((f, i) => <li key={i}>{typeof f === 'object' ? JSON.stringify(f) : f}</li>)}
+                  </ul>
+                </div>
+              )}
+              {productDetails.pros && productDetails.pros.length > 0 && (
+                <div>
+                  <span className="font-semibold">Pros:</span>
+                  <ul className="list-disc ml-5">
+                    {productDetails.pros.map((p, i) => <li key={i}>{typeof p === 'object' ? JSON.stringify(p) : p}</li>)}
+                  </ul>
+                </div>
+              )}
+              {productDetails.cons && productDetails.cons.length > 0 && (
+                <div>
+                  <span className="font-semibold">Cons:</span>
+                  <ul className="list-disc ml-5">
+                    {productDetails.cons.map((c, i) => <li key={i}>{typeof c === 'object' ? JSON.stringify(c) : c}</li>)}
+                  </ul>
+                </div>
+              )}
+              {productDetails.specifications && Object.keys(productDetails.specifications).length > 0 && (
+                <div>
+                  <span className="font-semibold">Specifications:</span>
+                  <ul className="list-disc ml-5">
+                    {Object.entries(productDetails.specifications).map(([key, value]) => (
+                      <li key={key}><span className="font-semibold">{key}:</span> {typeof value === 'object' ? JSON.stringify(value) : value}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {productDetails.imageUrl && (
+                <img src={productDetails.imageUrl} alt={productDetails.name} className="w-full max-w-xs mx-auto mt-2 rounded" />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
