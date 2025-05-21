@@ -103,3 +103,10 @@ item-discovery-hub/
 Pull requests and issues are welcome! Please open an issue to discuss your idea or bug before submitting a PR.
 
 ---
+
+# Future Improvements 
+
+- Add Ethical Products Search Functionality 
+- Add Product purchase link providing functionality 
+- Add More Filters to provide user with a better product search experience 
+- Add thumbnails for prodcuts (maybe web scrap?)
