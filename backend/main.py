@@ -142,7 +142,18 @@ class PerplexityClient:
         # Try to extract JSON from the content
         try:
             parsed_data = json.loads(content)
-            return parsed_data if isinstance(parsed_data, list) else [parsed_data]
+            # Ensure all product IDs are strings
+            if isinstance(parsed_data, list):
+                for product in parsed_data:
+                    if "id" in product:
+                        product["id"] = str(product["id"])
+                return parsed_data
+            elif isinstance(parsed_data, dict):
+                if "id" in parsed_data:
+                    parsed_data["id"] = str(parsed_data["id"])
+                return [parsed_data]
+            else:
+                return [parsed_data]
         except json.JSONDecodeError:
             # Try to extract JSON from markdown code blocks or plain text
             json_match = None
@@ -156,7 +167,18 @@ class PerplexityClient:
             if json_match:
                 try:
                     parsed_products = json.loads(json_match)
-                    return parsed_products if isinstance(parsed_products, list) else [parsed_products]
+                    # Ensure all product IDs are strings in the extracted JSON as well
+                    if isinstance(parsed_products, list):
+                        for product in parsed_products:
+                            if "id" in product:
+                                product["id"] = str(product["id"])
+                        return parsed_products
+                    elif isinstance(parsed_products, dict):
+                        if "id" in parsed_products:
+                            parsed_products["id"] = str(parsed_products["id"])
+                        return [parsed_products]
+                    else:
+                        return [parsed_products]
                 except json.JSONDecodeError:
                     pass
             
@@ -175,7 +197,18 @@ class PerplexityClient:
         # Try to extract JSON from the content
         try:
             parsed_data = json.loads(content)
-            return parsed_data if isinstance(parsed_data, list) else [parsed_data]
+            # Ensure all update IDs are strings
+            if isinstance(parsed_data, list):
+                for update in parsed_data:
+                    if "id" in update:
+                        update["id"] = str(update["id"])
+                return parsed_data
+            elif isinstance(parsed_data, dict):
+                if "id" in parsed_data:
+                    parsed_data["id"] = str(parsed_data["id"])
+                return [parsed_data]
+            else:
+                return [parsed_data]
         except json.JSONDecodeError:
             # Try to extract JSON from markdown code blocks or plain text
             json_match = None
@@ -189,7 +222,18 @@ class PerplexityClient:
             if json_match:
                 try:
                     parsed_updates = json.loads(json_match)
-                    return parsed_updates if isinstance(parsed_updates, list) else [parsed_updates]
+                    # Ensure all update IDs are strings in the extracted JSON as well
+                    if isinstance(parsed_updates, list):
+                        for update in parsed_updates:
+                            if "id" in update:
+                                update["id"] = str(update["id"])
+                        return parsed_updates
+                    elif isinstance(parsed_updates, dict):
+                        if "id" in parsed_updates:
+                            parsed_updates["id"] = str(parsed_updates["id"])
+                        return [parsed_updates]
+                    else:
+                        return [parsed_updates]
                 except json.JSONDecodeError:
                     pass
             

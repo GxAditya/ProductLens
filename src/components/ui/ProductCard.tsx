@@ -15,19 +15,6 @@ interface ProductCardProps {
 const ProductCard = ({ product, showActions = true, className }: ProductCardProps) => {
   return (
     <Card className={`card-hover overflow-hidden ${className || ''}`}>
-      <div className="aspect-square w-full relative bg-muted">
-        <img
-          src={product.imageUrl || "https://placehold.co/300x300/e6f2ff/0284c7?text=Product"}
-          alt={product.name}
-          className="h-full w-full object-cover"
-        />
-        {product.rating && (
-          <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs flex items-center gap-1">
-            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-            <span>{product.rating.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
       <CardHeader className="p-4 pb-0">
         <CardTitle className="text-lg line-clamp-2">{product.name}</CardTitle>
         <CardDescription className="line-clamp-2 text-xs">{product.description}</CardDescription>
