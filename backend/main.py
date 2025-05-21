@@ -74,33 +74,34 @@ class PerplexityClient:
         self.search_recency_filter = "month"
     
     async def query_perplexity(self, message: str, system_prompt: str):
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.base_url,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": message}
-                    ],
-                    "temperature": self.temperature,
-                    "max_tokens": self.max_tokens,
-                    "search_recency_filter": self.search_recency_filter,
-                },
-                timeout=30.0  # Increased timeout for complex queries
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Perplexity API error: {response.text}"
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.base_url,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": message}
+                        ],
+                        "temperature": self.temperature,
+                        "max_tokens": self.max_tokens,
+                        "search_recency_filter": self.search_recency_filter,
+                    },
+                    timeout=60.0  # Increased timeout for complex queries
                 )
-            
-            return response.json()
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"Perplexity API error: {response.text}"
+                    )
+                return response.json()
+        except httpx.ReadTimeout:
+            raise HTTPException(status_code=504, detail="Perplexity API timed out. Please try again later.")
     
     @lru_cache(maxsize=100)
     async def compare_products(self, product1: str, product2: str):
