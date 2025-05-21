@@ -34,7 +34,7 @@ A modern product discovery and comparison web app powered by React, FastAPI, and
 
 ### 1. Clone the repository
 ```sh
-git clone <YOUR_GIT_URL>
+git clone https://github.com/GxAditya/item-discovery-hub.git
 cd item-discovery-hub
 ```
 
