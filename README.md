@@ -109,7 +109,7 @@ Pull requests and issues are welcome! Please open an issue to discuss your idea 
 - Add Ethical Products Search Functionality 
 - Add Product purchase link providing functionality 
 - Add More Filters to provide user with a better product search experience 
-- Add thumbnails for prodcuts (maybe web scrap?)
+- Add thumbnails for products (maybe web scrap?)
 - Add database to store user queries
 - Add backendd caching for faster queries
 - Add parallel api requesting for speed in fetching data .
