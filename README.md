@@ -1,4 +1,4 @@
-# Item Discovery Hub
+# ProductLens
 
 A modern product discovery and comparison web app powered by React, FastAPI, and the Perplexity Sonar API.
 
